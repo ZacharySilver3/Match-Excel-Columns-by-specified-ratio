@@ -1,0 +1,26 @@
+import pandas as pd
+from fuzzywuzzy import fuzz 
+import string
+
+def fuzzmatch(file_path, sheet, c1, c2, output_path=None, match_ratio=80, mode=0):
+    df=pd.read_excel(file_path, sheet_name=sheet)
+    df[c1] = df[c1].astype(str)
+    df[c2] = df[c2].astype(str)
+    def sort_text(text):
+        cleaned_word = text.translate(str.maketrans('','',string.punctuation))
+        sorted_word="".join(sorted(cleaned_word.replace(" ",'').lower()))
+        return sorted_word
+    def check(row):
+        if mode == 0:
+            value1=str(row[c1]) if pd.notna(row[c1]) else ""
+            value2=str(row[c2]) if pd.notna(row[c2]) else ""
+        else:
+            value1=sort_text(str(row[c1])) if pd.notna(row[c2]) else ""
+            value2=sort_text(str(row[c2])) if pd.notna(row[c2]) else ""
+        return "Match" if fuzz.ratio(value1,value2)>= match_ratio else "No Match"
+    df["Match_Result"] = df.apply(check, axis=1)
+    if output_path == None:
+        output_path="output with matches.xlsx"
+    else:
+        output_path = output_path+'output with matches.xlsx'
+    df.to_excel(output_path,index = False)
